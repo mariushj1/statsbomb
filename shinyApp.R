@@ -7,11 +7,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                     sidebarPanel(
                                       selectInput("hold",
                                                   label = " Vælg hold",
-                                                  choices = c("Danmark", "Kina"),
-                                                  selected = "Danmark"),
+                                                  choices = unique(dkmshotsel$team.name),
+                                                  selected = ""),
                                       selectInput("plname",
                                                   label = "Vælg spiller",
-                                                  choices = ""),
+                                                  choices = unique(dkpshotsel$player.name)),
                                       checkboxInput("triangle",
                                                     value = FALSE,
                                                     label = "Vis trekant til mål")
@@ -30,9 +30,18 @@ ui <- fluidPage(theme = shinytheme("flatly"),
 
 
 server <- function(input,output,session) {
-  #dette er fanen Skud
+  # Fanen Skudforsøg
   observe({
+    hold <- input$hold
+    selectedPlayers <- dkmshotsel %>% 
+      filter(team.name == hold) %>% 
+      select(player.name) %>% 
+      distinct()
     
+    # Opdaterer input til at vælge spiller
+    updateSelectInput(session, "plname",
+                      choices = selectedPlayers,
+                      selected = "")
   })
   output$bane <- renderPlot({
     
