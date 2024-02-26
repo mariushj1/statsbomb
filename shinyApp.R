@@ -11,19 +11,19 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                                   selected = ""),
                                       selectInput("plname",
                                                   label = "Vælg spiller",
-                                                  choices = unique(dkpshotsel$player.name)),
+                                                  choices = unique(dkpshotsel$player.name),
+                                                  selected = NULL),
+                                      selectInput("skud",
+                                                  label = "Vælg skudforsøg",
+                                                  choices = NULL,
+                                                  selected = NULL),
                                       checkboxInput("triangle",
                                                     value = FALSE,
                                                     label = "Vis trekant til mål")
                                     ),
                                     mainPanel(
                                       plotOutput("bane"),
-                                      fluidRow(
-                                        column(width = 8,
-                                               dataTableOutput("playertab")
                                         )
-                                      )
-                                    )
                            )
                 )
 )
@@ -41,9 +41,60 @@ server <- function(input,output,session) {
     # Opdaterer input til at vælge spiller
     updateSelectInput(session, "plname",
                       choices = selectedPlayers,
-                      selected = "")
+                      selected = )
   })
+  observe({
+    
+    # Opdaterer valget af skud baseret på valg af spiller
+      
+    player <- input$plname
+    
+    seqSkud <- 1:nrow(dkmshotsel %>% 
+      filter(player.name == player))
+    
+    
+    updateSelectInput(session, "skud",
+                      choices = seqSkud,
+                      selected = )
+  })
+  
   output$bane <- renderPlot({
+    
+    skud <- input$skud
+    player <- input$plname
+    
+    spillerSkud <- dkmshotsel %>% 
+      filter(player.name == player)
+    
+    testshot <- spillerSkud[skud,]
+    testff <- testshot$shot.freeze_frame[[1]]
+    testff <- testff %>% rowwise() %>% mutate(x=location[1],
+                                              y=location[2])
+    
+    ggplot(testff) +
+      annotate_pitch (
+        dimensions = pitch_statsbomb,
+        colour = "white",
+        fill = "#3ab54a") +
+      geom_point(data=testff,aes(x = x, y = y, color=teammate), size = 2) +
+      scale_color_manual(values = c("TRUE" = "blue", "FALSE" = "red"),
+                         labels = c("TRUE" = "hold1","FALSE" ="Hold2"),
+                         name = "") +
+      geom_point(data=testshot,aes(x = location.x, y = location.y), size = 4) + 
+      geom_segment(data=testshot,aes(x = location.x, 
+                                     y = location.y, 
+                                     xend = shot.end_location.x,
+                                     yend=shot.end_location.y),
+                   colour = "yellow",
+                   size = 1) +
+      theme_pitch() +
+      direction_label() +
+      ggtitle("Simple passmap Taylor", 
+              "ggsoccer example")+
+      coord_flip(xlim = c(75, 121)) +
+      scale_y_reverse() +
+      geom_text(data=testff,aes(x=x,y=y,label=player.name), size=3.5,vjust=1)+
+      geom_text(data=testshot,aes(x=location.x,y=location.y,label=player.name), size=4.5,vjust=1)
     
   })
   
