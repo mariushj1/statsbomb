@@ -60,17 +60,30 @@ server <- function(input,output,session) {
   
   output$bane <- renderPlot({
     
+    # Angiver valg af skud og spiller
     skud <- input$skud
     player <- input$plname
     
+    
+    # Laver en ny dataframe kun med valgte spiller
     spillerSkud <- dkmshotsel %>% 
       filter(player.name == player)
     
+    # Laver ny dataframe til freeze frame
     testshot <- spillerSkud[skud,]
     testff <- testshot$shot.freeze_frame[[1]]
     testff <- testff %>% rowwise() %>% mutate(x=location[1],
                                               y=location[2])
     
+    # Laver trekanten
+    dftriforshot <- dfForSingleShotTri(unlist(testshot$location))
+    triangleAlpha <- ifelse(input$triangle == FALSE, 0, 0.5)
+    
+    
+    hold <- input$hold
+    modstander <- as.character(unique(dkmshotsel[dkmshotsel$team.name != hold,"team.name"]))
+    
+    # Laver ggplot 
     ggplot(testff) +
       annotate_pitch (
         dimensions = pitch_statsbomb,
@@ -78,7 +91,7 @@ server <- function(input,output,session) {
         fill = "#3ab54a") +
       geom_point(data=testff,aes(x = x, y = y, color=teammate), size = 2) +
       scale_color_manual(values = c("TRUE" = "blue", "FALSE" = "red"),
-                         labels = c("TRUE" = "hold1","FALSE" ="Hold2"),
+                         labels = c("TRUE" = hold, "FALSE" = modstander),
                          name = "") +
       geom_point(data=testshot,aes(x = location.x, y = location.y), size = 4) + 
       geom_segment(data=testshot,aes(x = location.x, 
@@ -87,6 +100,7 @@ server <- function(input,output,session) {
                                      yend=shot.end_location.y),
                    colour = "yellow",
                    size = 1) +
+      geom_polygon(data = dftriforshot,aes(x=sx,y=sy),alpha=triangleAlpha) +
       theme_pitch() +
       direction_label() +
       ggtitle("Simple passmap Taylor", 
