@@ -1,3 +1,7 @@
+#Testing hvorvidt der er noget her
+
+
+
 
 Spiller_lokation <- mulig_spilning[,c(1,4)]
 Spiller_lokation <- rbind(Spiller_lokation,testshot[,c(7,4)])
