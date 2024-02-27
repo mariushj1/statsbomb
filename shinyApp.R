@@ -1,6 +1,37 @@
 library(shiny)
 library(shinythemes)
+library(StatsBombR)
+library(tidyverse)
+library(ggsoccer)
+source("util.R")
 
+# Indhenter data
+FComp <- FreeCompetitions() %>%
+  filter(competition_id %in% c(72))
+
+# Indhenter matches
+Matches <- FreeMatches(FComp)
+
+# Kvindernes VM 2023, competitionid=107
+VMMatches=Matches %>% filter(season.season_id==107)
+
+StatsBombData <- free_allevents(MatchesDF = Matches, Parallel = T)
+
+StatsBombData = allclean(StatsBombData)
+
+
+# find en kamp
+dkmatch <- StatsBombData %>% filter(match_id==3893795)
+dkmshot <- dkmatch %>% filter(type.name=="Shot")
+
+# angle and dist to goal
+dkmshotsel <- dkmshot[,c(74,77,25,26,21,22,10,150,151,156,157)]
+dkmshotsel <- dkmshotsel %>% rowwise() %>% mutate(angle=mangle(unlist(location)))
+dkmshotsel <- dkmshotsel %>% rowwise() %>% mutate(dist=disttogoal(unlist(location)))
+dkpshotsel <- dkmshotsel %>% filter(team.id==853)
+chpshotsel <- dkmshotsel %>% filter(team.id==1207)
+
+# ui til shiny
 ui <- fluidPage(theme = shinytheme("flatly"),
                 navbarPage("Statistik over fodboldspillere",
                            tabPanel("Skudforsøg",
@@ -18,7 +49,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                                   choices = NULL,
                                                   selected = NULL),
                                       checkboxInput("triangle",
-                                                    value = FALSE,
+                                                    value = TRUE,
                                                     label = "Vis trekant til mål")
                                     ),
                                     mainPanel(
@@ -29,6 +60,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
 )
 
 
+# Server til shiny
 server <- function(input,output,session) {
   # Fanen Skudforsøg
   observe({
@@ -88,9 +120,11 @@ server <- function(input,output,session) {
       annotate_pitch (
         dimensions = pitch_statsbomb,
         colour = "white",
-        fill = "#3ab54a") +
+        fill = "steelblue4") +
+      geom_text(data=testff,aes(x=x,y=y,label=player.name, color = "#ffffff"), size=3.5,vjust=1)+
+      geom_text(data=testshot,aes(x=location.x,y=location.y,label=player.name, color = "#ffffff"), size=4.5,vjust=1) +
       geom_point(data=testff,aes(x = x, y = y, color=teammate), size = 2) +
-      scale_color_manual(values = c("TRUE" = "blue", "FALSE" = "red"),
+      scale_color_manual(values = c("TRUE" = "#549e3e", "FALSE" = "#d13038"),
                          labels = c("TRUE" = hold, "FALSE" = modstander),
                          name = "") +
       geom_point(data=testshot,aes(x = location.x, y = location.y), size = 4) + 
@@ -100,18 +134,17 @@ server <- function(input,output,session) {
                                      yend=shot.end_location.y),
                    colour = "yellow",
                    size = 1) +
+      labs(title = paste0("Skudforsøg nr ", skud, ". for ", player),
+           subtitle = paste0(hold, " vs ", modstander)) +
       geom_polygon(data = dftriforshot,aes(x=sx,y=sy),alpha=triangleAlpha) +
       theme_pitch() +
       direction_label() +
-      ggtitle("Simple passmap Taylor", 
-              "ggsoccer example")+
       coord_flip(xlim = c(75, 121)) +
       scale_y_reverse() +
-      geom_text(data=testff,aes(x=x,y=y,label=player.name), size=3.5,vjust=1)+
-      geom_text(data=testshot,aes(x=location.x,y=location.y,label=player.name), size=4.5,vjust=1)
+      theme(plot.title = element_text(face = "bold"))
     
   })
-  
 }
 
+# Kør shiny
 shinyApp(ui=ui, server=server)
