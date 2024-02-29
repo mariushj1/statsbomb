@@ -1,6 +1,6 @@
 # Angiver valg af skud og spiller
-skud <- 1
-player <- "Kathrine Møller Kühl"
+skud <- 2
+player <- "Amalie Jørgensen Vangsgaard"
 input <- TRUE
 hold <- "Denmark Women's"
 
@@ -27,7 +27,7 @@ dftriforshot <- dfForSingleShotTri(unlist(testshot$location))
 triangleAlpha <- ifelse(input == FALSE, 0, 0.5)
 
 
-hold <- input$hold
+#hold <- input$hold
 modstander <- as.character(unique(dkmshotsel[dkmshotsel$team.name != hold,"team.name"]))
 
 # Laver ggplot 
