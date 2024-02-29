@@ -11,6 +11,7 @@ dfForSingleShotTri <-  function(shot) {
   return(resshot)
 }
 
+#K
 
 # Function to check if a point is inside the triangle
 point_inside_triangle <- function(point, triangle_vertices) {
